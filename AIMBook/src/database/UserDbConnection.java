@@ -1,19 +1,38 @@
 package database;
 
-import java.security.SecureRandom;
+import java.sql.Array;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import model.Investor;
-import model.Pharmacist;
-import model.User;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.Map;
 
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import model.Investor;
+import model.Pharmacy;
+import model.User;
+import utils.FileOperation;
+
+
+/* DEPLOYMENT/LOCAL CHANGES
+ * database ip address
+ * database password
+ * */
 public class UserDbConnection {
 
 	Connection connection;
 
+//	final String JDBC_DRIVER = "com.mysql.jdbc.Driver";
+//	final String DB_URL = "jdbc:mysql://database";
+//	final String USER = "root";
+//	final String PSWD = "root";
+//	final String MYSQL_PORT = "3306";
+	
 	final String JDBC_DRIVER = "com.mysql.jdbc.Driver";
 	final String DB_URL = "jdbc:mysql://localhost";
 	final String USER = "root";
@@ -21,546 +40,656 @@ public class UserDbConnection {
 	final String MYSQL_PORT = "3306";
 
 	// open the user database connection
-	public UserDbConnection(String dbName) {
-		try {
-
-			Class.forName(JDBC_DRIVER);
-			String db = DB_URL + ":" + MYSQL_PORT + "/" + dbName;
-			connection = DriverManager.getConnection(db, USER, PSWD);
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
-	}
-
-	// to be used when creating a new database during signup
 	public UserDbConnection() {
+		String db;
 		try {
-
 			Class.forName(JDBC_DRIVER);
-			String db = DB_URL + ":" + MYSQL_PORT + "/";
+			 db = DB_URL + ":" + MYSQL_PORT + "/";
 			connection = DriverManager.getConnection(db, USER, PSWD);
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
 	}
+	
+	/*User registration 
+	 * insert into users_db.users the ID and password
+	 * */
+	public boolean registerUser(String dbName,int ID, String password){
+		PreparedStatement statement;
+		boolean result = true;
+		String query;
+		try {
+			query = "CREATE DATABASE IF NOT EXISTS " + dbName;
+			statement = connection.prepareStatement(query);
+			statement.executeUpdate();
+			 query = "CREATE TABLE IF NOT EXISTS " + dbName
+					+ ".users(ID VARCHAR(10) NOT NULL,password VARCHAR(10) NOT NULL)";
+			statement= connection.prepareStatement(query);
+			statement.executeUpdate();
+			
+			query = "INSERT INTO " + dbName + ".users (ID,password) "
+					+ "VALUES(?,?)";
+			statement= connection.prepareStatement(query);
+			statement.setString(1, Integer.toString(ID));
+			statement.setString(2, password);
+			statement.executeUpdate();
 
-	/* Generate a unique User ID */
-	public int setId() {
-		int id;
-		String query,dbID;
+		} catch (SQLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			result = false;
+		}
+		finally{
+				try {
+					if (connection != null)
+					connection.close();
+				} catch (SQLException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+		}
+		return result;
+	}
+	
+	/*pharmacy registration
+	 *insert into users_db.pharmacy the pharmacist info
+	 *the ID,fn,ln,dbName
+	 **/
+	public boolean AddPharmacy(String dbName,Pharmacy pharmacist){
+		PreparedStatement statement;
+		boolean result = true;
+		String query;
+		try {
+			query = "CREATE DATABASE IF NOT EXISTS " + dbName;
+			statement = connection.prepareStatement(query);
+			statement.executeUpdate();
+			 query = "CREATE TABLE IF NOT EXISTS "
+					 + dbName
+					+ ".pharmacy(ID VARCHAR(10) NOT NULL,`First name` VARCHAR(50) NOT NULL,"
+					+ "`Last name` VARCHAR(50) NOT NULL,`Dbname` VARCHAR(50) NOT NULL)";
+			statement= connection.prepareStatement(query);
+			statement.executeUpdate();
+			 query = "INSERT INTO " + dbName 
+					 +".pharmacy (ID,`First name`,`Last name`,DbName)"
+					+ "VALUES(?,?,?,?)";
+			statement= connection.prepareStatement(query);
+			statement.setString(1, Integer.toString(pharmacist.getId()));
+			statement.setString(2, pharmacist.getFirst_name());
+			statement.setString(3, pharmacist.getLast_name());
+			statement.setString(4, pharmacist.getLast_name()+"_db");
+			statement.executeUpdate();
+			
+		} catch (SQLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			result = false;
+		}
+		finally{
+			try {
+				if (connection != null)
+				connection.close();
+			} catch (SQLException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+	}
+		return result;
+	}
+	
+
+	
+	/*Record changes in the stock
+	 * stock_db.productType
+	 * */
+	public boolean updateStock(String dbName,String userId,String productType,String transactionType,String transactionId){
+		boolean result = true;
+		PreparedStatement statement;
+		String query;
+		try {
+			query = "CREATE DATABASE IF NOT EXISTS " + dbName;
+			statement = connection.prepareStatement(query);
+			statement.executeUpdate();
+			 query = "CREATE TABLE IF NOT EXISTS " + dbName + "." + productType
+					+ "(Date VARCHAR(30) NOT NULL,"
+					+ "User_ID VARCHAR(30) NOT NULL,"
+					+ "transaction_ID VARCHAR(30) NOT NULL,"
+					+ "transaction_type VARCHAR(30) NOT NULL)";
+			statement = connection.prepareStatement(query);
+			statement.executeUpdate();
+			 query = "INSERT INTO " + dbName + "." + productType + 
+					"(date,user_ID,transaction_ID,transaction_Type)"
+					+ "VALUES(CURRENT_TIMESTAMP,?,?,?)";
+			statement = connection.prepareStatement(query);
+			statement.setString(1, userId);
+			statement.setString(2, transactionId);
+			statement.setString(3, transactionType);
+			statement.executeUpdate();
+		} catch (Exception e) {
+			e.printStackTrace();
+			result = false;
+		}
+		finally{		
+				try {
+					if(connection != null)
+						connection.close();
+				} catch (SQLException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+		} 
+		return result;	
+	}
+	
+	/*delete a row (transaction recorded)
+	 * in the stock_db.productType*/
+	public boolean deleteTransaction(String dbName,String productType,int transactionId){
+		boolean result = true;
+		PreparedStatement statement;
+		String query;
+		try {
+			query = "CREATE DATABASE IF NOT EXISTS " + dbName;
+			statement = connection.prepareStatement(query);
+			statement.executeUpdate();
+			 query = "DELETE FROM " + productType +
+					"WHERE transaction_ID = ?";
+			statement = connection.prepareStatement(query);
+			statement.setString(1, Integer.toString(transactionId));
+			statement.executeUpdate();
+		} catch (Exception e) {
+			e.printStackTrace();
+			result = false;
+		}
+		finally{		
+				try {
+					if(connection != null)
+						connection.close();
+				} catch (SQLException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+		} 
+		return result;
+		
+	}
+	/*Record purchases made
+	 * in the transactions_db.purchases
+	 * */
+	public boolean recordPurchases(String dbName,String product_Type,String transactionId, String quantity){
+		boolean result = true;
+		PreparedStatement statement;
+		String query;
+		try {
+			query = "CREATE DATABASE IF NOT EXISTS " + dbName;
+			statement = connection.prepareStatement(query);
+			statement.executeUpdate();
+			 query = "CREATE TABLE IF NOT EXISTS " + dbName
+					+ ".purchases"
+					+"(date VARCHAR(30) NOT NULL,"
+					+ "transaction_ID VARCHAR(20) NOT NULL,"
+					+"product_Type VARCHAR(30) NOT NULL,"
+					+ "quantity VARCHAR(20) NOT NULL)";
+			statement = connection.prepareStatement(query);
+			statement.executeUpdate();
+			 query = "INSERT INTO " + dbName 
+					 +".purchases (date,transaction_ID,product_Type,quantity)"
+					+ "VALUES(CURRENT_TIMESTAMP,?,?,?)";
+			statement = connection.prepareStatement(query);
+			statement.setString(1,transactionId);
+			statement.setString(2,product_Type);
+			statement.setString(3,quantity);
+			statement.executeUpdate();
+		} catch (SQLException e) {
+			result = false;
+			e.printStackTrace();
+		}
+		finally{
+				try {
+					if (connection != null)
+						connection.close();
+				} catch (SQLException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+		}
+		return result;
+		
+		
+		
+	}
+	/*Record sales made
+	 * in the transactions_db.sales
+	 * */
+	public boolean recordSales(String dbName,String transactionId,String productType,String quantity,String unitPrice,String distributorId){
+		boolean result = true;
+		PreparedStatement statement;
+		String query,query1,query2;
+		try {
+			query = "CREATE DATABASE IF NOT EXISTS " + dbName;
+			statement = connection.prepareStatement(query);
+			statement.executeUpdate();
+			 query = "CREATE TABLE IF NOT EXISTS " + dbName 
+					+ ".sales"
+					+ "(date VARCHAR(30) NOT NULL,"
+					+ "transaction_ID VARCHAR(20) NOT NULL,"
+					+ "product_type VARCHAR(30) NOT NULL,"
+					+ "quantity VARCHAR(20) NOT NULL,"
+					+ "unit_price VARCHAR(20) NOT NULL,"
+					+ "distributor_ID VARCHAR(20) NULL)";
+			statement = connection.prepareStatement(query);
+			statement.executeUpdate();
+			 query1 = "INSERT INTO "+ dbName
+			 		+ ".sales (date,transaction_ID,product_type,quantity,unit_price,distributor_ID)"
+					+ "VALUES(CURRENT_TIMESTAMP,?,?,?,?,?)";
+			 query2 = "INSERT INTO "+ dbName
+				 		+ ".sales (date,transaction_ID,product_type,quantity,unit_price)"
+						+ "VALUES(CURRENT_TIMESTAMP,?,?,?,?)";
+			 query = distributorId.equals("")? query2:query1;
+			 
+			statement = connection.prepareStatement(query);
+			statement.setString(1, transactionId);
+			statement.setString(2, productType);
+			statement.setString(3, quantity);
+			statement.setString(4, unitPrice);
+			if(!distributorId.equals(""))
+				statement.setString(5, distributorId);
+			statement.executeUpdate();
+
+		} catch (SQLException e) {
+			result = false;
+			e.printStackTrace();
+		}
+		finally{
+			
+				try {
+					if(connection != null)
+						connection.close();
+				} catch (SQLException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+		}
+		return result;
+		
+	}
+	
+	/*while Login
+	 * check entered password if matches one of the users_db.users
+	 * return the user's ID
+	 * */
+	public int checkPassword(String password){
+		PreparedStatement statement;
+		String dbPswd,query;
+		int id = 0;
+		try {
+			 query = "SELECT * FROM users_db.users ";
+			statement = connection.prepareStatement(query);
+			ResultSet rs = statement.executeQuery();
+			while(rs.next()){
+				dbPswd = rs.getString("password");
+				if (dbPswd.equals(password)){
+					id= Integer.parseInt(rs.getString("ID"));
+					break;
+				}
+			}
+			
+		} catch (SQLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		finally{
+			try {
+				if (connection != null)
+				connection.close();
+			} catch (SQLException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+	}
+		return id;
+	}
+	/*get the user info(Fn,Ln,dbName)
+	 *  passing the user ID
+	 *from the users_db.userType(pharmacy/investor)
+	 **/
+	public JSONObject retrieveUserInfo(int ID,String userType){
+		User user = userType.equals("pharmacy")? new Pharmacy() : new Investor();
+		PreparedStatement statement;
+		int dbID = -1;
+		String dbFirstName = null;
+		String dbLastName = null;
+		String userDbName = null;
+		String query;
+		JSONObject json = new JSONObject();
+		
+		try {
+			 query = "SELECT * FROM users_db."+userType + " WHERE ID=?";
+			statement = connection.prepareStatement(query);
+			statement.setString(1,Integer.toString(ID));
+			ResultSet rs = statement.executeQuery();
+			while(rs.next()){
+				dbID = Integer.parseInt(rs.getString("ID"));
+					dbFirstName = rs.getString("First name");
+					dbLastName = rs.getString("Last name");
+					userDbName = rs.getString("DbName");
+			}
+			user.setFirst_name(dbFirstName);
+			user.setLast_name(dbLastName);
+			user.retrieveId(dbID);			
+			json.put("ID", user.getId());
+			json.put("firstName", user.getFirst_name());
+			json.put("lastName", user.getLast_name());
+			json.put("DbName", userDbName);
+
+			
+			} catch (Exception e) {
+
+				e.printStackTrace();
+			}
+		
+		finally{
+			try {
+				if(connection != null)
+					connection.close();				
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+		}
+		return json;
+		
+			
+	}
+	
+	/*
+	 * create new database
+	 * */
+	public boolean createDatabase(String dbName) {
+		boolean result = true;
+		try {
+			String query = "CREATE DATABASE IF NOT EXISTS " + dbName;
+
+			PreparedStatement statement = connection.prepareStatement(query);
+			statement.executeUpdate();
+		} catch (Exception e) {
+			// TODO: handle exception
+			System.out.println(e);
+			result = false;
+		}
+		finally{
+			try {
+				if(connection != null)
+				connection.close();
+			} catch (SQLException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		}
+		return result;
+	}
+
+	/*Drop/delete database of a pharmacist*/
+	/*
+	 * dbName = pharmacist.getLast_name() + "_db";
+	 */
+	public boolean dropDb(String dbName) {
+		boolean result = true;
+		String query;
+		PreparedStatement statement = null;
+		try {
+			query = "DROP DATABASE " + dbName;
+			statement = connection.prepareStatement(query);
+			statement.executeUpdate();
+		} catch (Exception e) {
+			// TODO: handle exception
+			result = false;
+		}
+		finally{
+			try {
+				if(connection != null)
+				connection.close();
+			} catch (SQLException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		}
+		return result;
+	}
+	
+	/*delete user from the users_db.users*/
+	public boolean deleteUser(String dbName,int ID){
+		PreparedStatement statement ;
+		boolean result = true;
+		String query;
+		try {
+			 query = "DELETE FROM " + dbName +
+					 ".users WHERE ID=?";
+			statement = connection.prepareStatement(query);
+			statement.setString(1, Integer.toString(ID));
+			statement.executeUpdate();
+		} catch (SQLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			result = true;
+		}
+		finally{
+			try {
+				if(connection != null)
+				connection.close();
+			} catch (SQLException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		}
+		return result;
+	}
+	/*delete pharmacy from the users_db.pharmacy*/
+	public boolean deletePharmacy(String dbName,int ID){
+		PreparedStatement statement ;
+		boolean result = true;
+		String query;
+		try {
+			 query = "DELETE FROM " + dbName +
+					 ".pharmacy WHERE ID=?";
+			statement = connection.prepareStatement(query);
+			statement.setString(1, Integer.toString(ID));
+			statement.executeUpdate();
+			
+		} catch (SQLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			result = true;
+		}
+		finally{
+			try {
+				if(connection != null)
+				connection.close();
+			} catch (SQLException e) {
+				e.printStackTrace();
+			}
+		}
+		
+		return result;
+	}
+	
+	public ArrayList<String> getPurchaseTransactionIds(String userId,
+			String productType){
+		
+		String query,transactionId;
 		PreparedStatement statement;
 		ResultSet rs;
-		// will provide 100,000 unique Users IDs
-		SecureRandom random = new SecureRandom();
-		id = random.nextInt(99999);
+		ArrayList <String> transactionIds = new ArrayList<>();
+		
 		try {
-			query = "SELECT * FROM users";
+			query = "SELECT * FROM stock_db." + productType
+					+ " WHERE user_ID = ?"
+					+ "AND transaction_Type = 'purchase'";
 			statement = connection.prepareStatement(query);
+			statement.setString(1, userId);
 			rs = statement.executeQuery();
 			while(rs.next()){
-				dbID = rs.getString("ID");
-				if(id == Integer.parseInt(dbID)){
-					setId();
-				}
+				transactionId = rs.getString("transaction_ID");
+				transactionIds.add(transactionId);
 			}
 		} catch (SQLException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-		return id;
+		finally{
+			if(connection != null){
+				try {
+					connection.close();
+				} catch (SQLException e) {
+					e.printStackTrace();
+				}
+			}
+		}
+				return transactionIds;
+	
+	}
+	public ArrayList<String> getSalesTransactionIds(String userId,
+			String productType){
+		String query,transactionId;
+		PreparedStatement statement;
+		ResultSet rs;
+		ArrayList <String> transactionIds = new ArrayList<>() ;
+		
+		try {
+			query = "SELECT * FROM stock_db." + productType
+					+ " WHERE user_ID = ?"
+					+ "AND transaction_Type = 'sales'";
+			statement = connection.prepareStatement(query);
+			statement.setString(1, userId);
+			rs = statement.executeQuery();
+			while(rs.next()){
+				transactionId = rs.getString("transaction_ID");
+				transactionIds.add(transactionId);
+			}
+		} catch (SQLException e) {
+			e.printStackTrace();
+		}
+		finally{
+			if(connection != null){
+				try {
+					connection.close();
+				} catch (SQLException e) {
+					e.printStackTrace();
+				}
+			}
+		}
+				return transactionIds;
+	
+	}
+	
+	public int getRecordedPurchases(ArrayList<String> transIds){
+		String query;
+		int quantity=0;
+		PreparedStatement statement;
+		ResultSet rs;
+		StringBuilder transactionIds = new StringBuilder();
+		if(transIds.isEmpty())
+			return 0;
+		for(String id:transIds){
+			transactionIds.append(id+",");
+		}
+		transactionIds.deleteCharAt(transactionIds.length()-1);
+		
+		try {
+
+			query = "SELECT * FROM transactions_db.purchases WHERE transaction_ID  IN (" + transactionIds+")";
+			statement = connection.prepareStatement(query);
+			//statement.setString(1, transactionId);
+			rs = statement.executeQuery();
+			while (rs.next()){
 				
-
+				quantity += Integer.parseInt(rs.getString("quantity"));
+			}
+		} catch (SQLException e) {
+			e.printStackTrace();
+		}
+		finally{
+			if(connection != null){
+				try {
+					connection.close();
+				} catch (SQLException e) {
+					e.printStackTrace();
+				}
+			}
+		}
+		return quantity;
+		
 	}
-
-	/*
-	 * register user details to users_db
-	 */
-	public boolean signup(User user) {
-		boolean result = true;
+	public int getRecordedSales(ArrayList<String> transIds){
+		String query;
+		int quantity=0;
+		PreparedStatement statement;
+		ResultSet rs;
+		StringBuilder transactionIds = new StringBuilder();
+		if(transIds.isEmpty())
+			return 0;
+		for(String id:transIds){
+			transactionIds.append(id+",");
+		}
+		transactionIds.deleteCharAt(transactionIds.length()-1);
+		
 		try {
-			String userType = user instanceof Investor ? "investor":"pharmacist";
-			String query = "SELECT * FROM users";
-			PreparedStatement statement = connection.prepareStatement(query);
-			statement.executeQuery();
-			query = "INSERT INTO users (id,user_name," + "email,phone_number,user_type) " + "VALUES (?,?,?,?,?)";
 
+			query = "SELECT * FROM transactions_db.sales WHERE transaction_ID  IN (" + transactionIds+")";
 			statement = connection.prepareStatement(query);
-			statement.setInt(1, user.getId());
-			statement.setString(2, user.getUser_name());
-			statement.setString(3, user.getEmail());
-			statement.setString(4, user.getPhone_number());
-			statement.setString(5, userType);
-			statement.executeUpdate();
-			if (connection != null)
-				connection.close();
-
-		} catch (SQLException e) {
-			result = false;
-			e.printStackTrace();
-		}
-		return result;
-		}
-	/*
-	 * create user database and register his/her info as an pharmacist
-	 */
-	public boolean createDatabase(Pharmacist pharmacist) {
-		boolean result = true;
-		try {
-			String query = "CREATE DATABASE IF NOT EXISTS " + pharmacist.getUser_name() + "_db";
-
-			PreparedStatement statement = connection.prepareStatement(query);
-			statement.executeUpdate();
-			if (connection != null)
-				connection.close();
-		} catch (Exception e) {
-			// TODO: handle exception
-			System.out.println(e);
-			result = false;
-		}
-		return result;
-	}
-
-	/*
-	 * create user database and register his/her info as an investor
-	 */
-	public boolean createDatabase(Investor investor) {
-		boolean result = true;
-		try {
-
-			String query = "CREATE DATABASE IF NOT EXISTS " + investor.getUser_name() + "_db";
-
-			PreparedStatement statement = connection.prepareStatement(query);
-			statement.executeUpdate();
-			if (connection != null)
-				connection.close();
-
-		} catch (Exception e) {
-			// TODO: handle exception
-			System.out.println(e);
-			result = false;
-		}
-		return result;
-	}
-
-	/*
-	 * creating a table for an investor
-	 * 
-	 */
-	public boolean createTable_Investor() {
-		boolean result = true;
-		try {
-			String query = "CREATE TABLE IF NOT EXISTS investor" + "(" + "ID VARCHAR(10)," + "date DATE,"
-					+ "purchased VARCHAR(10)," + "sold VARCHAR(10)," + "stock VARCHAR(10)" + ")";
-			PreparedStatement statement = connection.prepareStatement(query);
-			statement.executeUpdate();
-			if (connection != null)
-				connection.close();
+			rs = statement.executeQuery();
+			while (rs.next()){
+				
+				quantity += Integer.parseInt(rs.getString("quantity"));
+			}
 		} catch (SQLException e) {
 			e.printStackTrace();
-			result = false;
 		}
-		return result;
+		finally{
+			if(connection != null){
+				try {
+					connection.close();
+				} catch (SQLException e) {
+					e.printStackTrace();
+				}
+			}
+		}
+		return quantity;
+		
 	}
+	
 
-	public boolean createTable_Pharmacy() {
+	/*sync products between the productList.txt file with
+	 * the stock_db*/
+	public boolean syncProduct(String product){
 		boolean result = true;
-
+		String query;
 		PreparedStatement statement;
 		try {
-			String query = "CREATE TABLE IF NOT EXISTS pharmacy " + "(" + "id VARCHAR(10)," + "date DATE,"
-					+ "product_code VARCHAR(10)" + ")";
+			query = "CREATE DATABASE IF NOT EXISTS stock_db" ;
 			statement = connection.prepareStatement(query);
 			statement.executeUpdate();
-			if (connection != null)
-				connection.close();
-		} catch (SQLException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-			result = false;
-		}
-
-		return result;
-	}
-
-	/*
-	 * add investor information into investors database
-	 */
-	public boolean addToInvestorsDatabase(Investor investor) {
-		boolean result = true;
-		PreparedStatement statement;
-		try {
-			String query = "INSERT INTO investors (id,user_name,first_name," + "last_name,email,phone_number,password) "
-					+ "VALUES (?,?,?,?,?,?,?)";
-
+			 query = "CREATE TABLE IF NOT EXISTS stock_db."+ product
+					+ "(Date VARCHAR(30) NOT NULL,"
+					+ "User_ID VARCHAR(30) NOT NULL,"
+					+ "transaction_ID VARCHAR(30) NOT NULL,"
+					+ "transaction_type VARCHAR(30) NOT NULL)";
 			statement = connection.prepareStatement(query);
-			statement.setInt(1, investor.getId());
-			statement.setString(2, investor.getUser_name());
-			statement.setString(3, investor.getFirst_name());
-			statement.setString(4, investor.getLast_name());
-			statement.setString(5, investor.getEmail());
-			statement.setString(6, investor.getPhone_number());
-			statement.setString(7, investor.getPassword());
 			statement.executeUpdate();
-
-			result = true;
-			if (connection != null)
-				connection.close();
-
-		} catch (SQLException e) {
-			e.printStackTrace();
-			result = false;
 		}
-		return result;
-	}
-
-	/*
-	 * adding pharmacist information to pharmacists database
-	 */
-	public boolean addToPharmacistsDatabase(Pharmacist pharmacist) {
-		boolean result = true;
-		PreparedStatement statement;
-		try {
-			String query = "INSERT INTO pharmacists (id,user_name,first_name,"
-					+ "last_name,email,phone_number,password) " + "VALUES (?,?,?,?,?,?,?)";
-
-			statement = connection.prepareStatement(query);
-			statement.setInt(1, pharmacist.getId());
-			statement.setString(2, pharmacist.getUser_name());
-			statement.setString(3, pharmacist.getFirst_name());
-			statement.setString(4, pharmacist.getLast_name());
-			statement.setString(5, pharmacist.getEmail());
-			statement.setString(6, pharmacist.getPhone_number());
-			statement.setString(7, pharmacist.getPassword());
-			statement.executeUpdate();
-			result = true;
-			if (connection != null)
-				connection.close();
-
-		} catch (SQLException e) {
-			e.printStackTrace();
-			result = false;
-		}
-
-		return result;
-	}
-
-	/*
-	 * Remove investor info from users_db	 */
-	public boolean removeInvestorFromUsers_db(Investor investor) {
-		boolean result = true;
-		String query;
-		PreparedStatement statement = null;
-		try {
-			query = "DELETE FROM users WHERE user_name=?";
-			statement = connection.prepareStatement(query);
-			statement.setString(1, investor.getUser_name());
-			statement.executeUpdate();
-			if (connection != null)
-				connection.close();
-		} catch (Exception e) {
-			// TODO: handle exception
-			result = false;
-		}
-		return result;
-
-	}
-	/*
-	 * Remove pharmacist info from users_db	 */
-	public boolean removePharmacistFromUsers_db(Pharmacist pharmacist) {
-		boolean result = true;
-		String query;
-		PreparedStatement statement = null;
-		try {
-			query = "DELETE FROM users WHERE user_name=?";
-			statement = connection.prepareStatement(query);
-			statement.setString(1, pharmacist.getUser_name());
-			statement.executeUpdate();
-			if (connection != null)
-				connection.close();
-		} catch (Exception e) {
-			// TODO: handle exception
-			result = false;
-		}
-		return result;
-
-	}
-	/*Remove investor details from investors_db*/
-	public boolean removeInvestorFromInvestors_db(Investor investor) {
-		boolean result = true;
-		String query;
-		PreparedStatement statement = null;
-		try {
-			query = "DELETE FROM investors WHERE user_name=?";
-			statement = connection.prepareStatement(query);
-			statement.setString(1, investor.getUser_name());
-			statement.executeUpdate();
-			if (connection != null)
-				connection.close();
-		} catch (Exception e) {
-			// TODO: handle exception
-			result = false;
-		}
-		return result;
-	}
-	/*Remove pharmacist details from pharmacists_db*/
-	public boolean removePharmacistFromPharmacists_db(Pharmacist pharmacist) {
-		boolean result = true;
-		String query;
-		PreparedStatement statement = null;
-		try {
-			query = "DELETE FROM pharmacists WHERE user_name=?";
-			statement = connection.prepareStatement(query);
-			statement.setString(1, pharmacist.getUser_name());
-			statement.executeUpdate();
-			if (connection != null)
-				connection.close();
-		} catch (Exception e) {
-			// TODO: handle exception
-			result = false;
-		}
-		return result;
-	}
-/*Drop/delete database of an investor*/
-	public boolean dropInvestorDb(Investor investor) {
-		boolean result = true;
-		String query;
-		PreparedStatement statement = null;
-		try {
-			query = "DROP DATABASE ?";
-			statement = connection.prepareStatement(query);
-			String dbName = investor.getUser_name() + "_db";
-			statement.setString(1, dbName);
-			statement.executeUpdate();
-			if (connection != null)
-				connection.close();
-		} catch (Exception e) {
-			// TODO: handle exception
-			result = false;
-		}
-		return result;
-	}
-	/*Drop/delete database of a pharmacist*/
-	public boolean dropPharmacistDb(Pharmacist pharmacist) {
-		boolean result = true;
-		String query;
-		PreparedStatement statement = null;
-		try {
-			query = "DROP DATABASE ?";
-			statement = connection.prepareStatement(query);
-			String dbName = pharmacist.getUser_name() + "_db";
-			statement.setString(1, dbName);
-			statement.executeUpdate();
-			if (connection != null)
-				connection.close();
-		} catch (Exception e) {
-			// TODO: handle exception
-			result = false;
-		}
-		return result;
-	}
-
-	public String login(String userName, String password) {
-		String db_user_name = null;
-		String db_email = null;
-		String db_password = null;
-		String db_Id = null;
-
-		try {
-			String query = "SELECT * FROM users";
-			PreparedStatement statement = connection.prepareStatement(query);
-			ResultSet rs = statement.executeQuery();
-
-			while (rs.next()) {
-
-				 db_user_name = rs.getString("user_name");
-				 db_email = rs.getString("email");
-				 db_password = rs.getString("password");
-				 db_Id = rs.getString("ID");
-
-				if (userName.equals(db_user_name) || userName.equals(db_email)) {
-					if (password.equals(db_password)) {
-						break;
+			catch (SQLException e) {
+				result = false;
+				e.printStackTrace();
+			}
+			finally{
+				if(connection != null){
+					try {
+						connection.close();
+					} catch (SQLException e) {
+						e.printStackTrace();
 					}
 				}
-			}
-			if (connection != null)
-				connection.close();
-		} catch (SQLException e) {
-			e.printStackTrace();
-		}
-		return db_Id;
-
+			
+		
 	}
-
-	public Investor retrieveInvestorFromDatabase(String dbName) {
-		Investor investor = new Investor();
-		int id = 0;
-		int sold = 0;
-		int purchased = 0;
-		int stock = 0;
-
-		try {
-			String query = "SELECT * FROM investor ORDER BY purchased DESC LIMIT 1";
-			PreparedStatement statement = connection.prepareStatement(query);
-			ResultSet rs = statement.executeQuery();
-			if (rs.next()) {
-				id = rs.getInt("ID");
-				sold = rs.getInt("sold");
-				purchased = rs.getInt("purchased");
-				stock = rs.getInt("stock");
-				investor.retrieveId(id);
-				investor.setSold(sold);
-				investor.setPurchased(purchased);
-				investor.setStock(stock);
-			}
-			if (connection != null)
-				connection.close();
-
-			query = "SELECT * FROM users";
-			statement = connection.prepareStatement(query);
-			rs = statement.executeQuery();
-			while (rs.next()) {
-				if (investor.getId() == rs.getInt("ID")) {
-					String user_name = rs.getString("user_name");
-					String first_name = rs.getString("first_name");
-					String last_name = rs.getString("last_name");
-					String email = rs.getString("email");
-					String phone_number = rs.getString("phone_number");
-					String password = rs.getString("password");
-
-					investor.setUser_name(user_name);
-					investor.setFirst_name(first_name);
-					investor.setLast_name(last_name);
-					investor.setEmail(email);
-					investor.setPhone_number(phone_number);
-					investor.setPassword(password);
-
-				}
-			}
-
-			if (connection != null)
-				connection.close();
-
-		} catch (SQLException e) {
-			e.printStackTrace();
-		}
-
-		return investor;
-	}
-
-	public boolean recordInvestorTransactionsToDb(Investor investor) {
-		boolean result = false;
-
-		try {
-			String query = "INSERT INTO investor (ID,date,purchased,sold,stock) " + "VALUES (?,?,?,?,?)";
-
-			PreparedStatement statement = connection.prepareStatement(query);
-			statement.setInt(1, investor.getId());
-			statement.setString(2, investor.getDate());
-			statement.setInt(3, investor.getPurchased());
-			statement.setInt(4, investor.getSold());
-			statement.setInt(5, investor.getStock());
-
-			statement.executeUpdate();
-			result = true;
-			if (connection != null)
-				connection.close();
-		} catch (SQLException e) {
-			e.printStackTrace();
-		}
-
 		return result;
-
-	}
-
-	public boolean recordPharmacistTransactionsToDb(Pharmacist pharmacist) {
-		boolean result = false;
-
-		try {
-			String query = "INSERT INTO pharmacy (ID,date,product_code) " + "VALUES (?,?,?)";
-
-			PreparedStatement statement = connection.prepareStatement(query);
-			statement.setInt(1, pharmacist.getId());
-			statement.setString(2, pharmacist.getDate());
-			statement.setString(3, pharmacist.getProduct_code());
-			statement.executeUpdate();
-			result = true;
-			if (connection != null)
-				connection.close();
-		} catch (SQLException e) {
-			e.printStackTrace();
-		}
-
-		return result;
-
-	}
-
-	public Pharmacist retrievePharmacistFromDatabase(String dbName) {
-		Pharmacist pharmacist = new Pharmacist();
-		int id = 0;
-		String product_code = null;
-
-		try {
-			String query = "SELECT * FROM pharmacy ORDER BY product_code DESC LIMIT 1";
-			PreparedStatement statement = connection.prepareStatement(query);
-			ResultSet rs = statement.executeQuery();
-			if (rs.next()) {
-				id = rs.getInt("ID");
-				product_code = rs.getString("product_code");
-				pharmacist.retrieveId(id);
-				pharmacist.setProduct_code(product_code);
-			}
-			// get data from the users_db corresponding to the pharmacist ID
-			dbName = "users_db";
-			String db = DB_URL + ":" + MYSQL_PORT + "/" + dbName;
-			connection = DriverManager.getConnection(db, USER, PSWD);
-			query = "SELECT * FROM users";
-			statement = connection.prepareStatement(query);
-			rs = statement.executeQuery();
-			while (rs.next()) {
-				if (pharmacist.getId() == rs.getInt("ID")) {
-					String user_name = rs.getString("user_name");
-					String first_name = rs.getString("first_name");
-					String last_name = rs.getString("last_name");
-					String email = rs.getString("email");
-					String phone_number = rs.getString("phone_number");
-					String password = rs.getString("password");
-
-					pharmacist.setUser_name(user_name);
-					pharmacist.setFirst_name(first_name);
-					pharmacist.setLast_name(last_name);
-					pharmacist.setEmail(email);
-					pharmacist.setPhone_number(phone_number);
-					pharmacist.setPassword(password);
-
-				}
-			}
-
-			if (connection != null)
-				connection.close();
-
-		} catch (SQLException e) {
-			e.printStackTrace();
-		}
-
-		return pharmacist;
-	}
-
-	// pharmacist selling a product
-	public boolean sell(String product_code) {
-		boolean result = false;
-		try {
-			String query = "DELETE FROM pharmacy WHERE product_code = ? ";
-			PreparedStatement statement = connection.prepareStatement(query);
-			statement.setString(1, product_code);
-			statement.executeUpdate();
-			result = true;
-			if (connection != null)
-				connection.close();
-
-		} catch (SQLException e) {
-			e.printStackTrace();
-		}
-		return result;
-	}
+		
+	
 }
+	}

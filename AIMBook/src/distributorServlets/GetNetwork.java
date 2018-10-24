@@ -1,4 +1,4 @@
-package controller;
+package distributorServlets;
 
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -10,23 +10,20 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.json.JSONException;
-import org.json.JSONObject;
-
-import model.Distributor;
+import model.Network;
 import utils.Utils;
 
 /**
- * Servlet implementation class ChangePassword
+ * Servlet implementation class GetNetwork
  */
-@WebServlet("/ChangePassword")
-public class ChangePassword extends HttpServlet {
+@WebServlet("/GetNetwork")
+public class GetNetwork extends HttpServlet {
 	private static final long serialVersionUID = 1L;
        
     /**
      * @see HttpServlet#HttpServlet()
      */
-    public ChangePassword() {
+    public GetNetwork() {
         super();
         // TODO Auto-generated constructor stub
     }
@@ -36,31 +33,17 @@ public class ChangePassword extends HttpServlet {
 	 */
 	protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
 		PrintWriter writer = response.getWriter(); 
-		 JSONObject json = new JSONObject();
 		 Map <String,String> params ;
 		 Utils utils =  new Utils();
 		 
 		 params = utils.parseRequest(request);
+		Network network = new Network();
+		
 		String regNumber = params.get("regNumber");
-		String oldPassWord = params.get("old");
-		String newPassword = params.get("new");
 		
-		if(regNumber == null || oldPassWord == null || newPassword == null)
+		if(regNumber == null)
 			return;
-		Distributor distributor = new Distributor();
-		boolean feedback ;
-		
-		feedback = distributor.changePassword(regNumber, oldPassWord, newPassword);
-		try {
-			json.put("feedback", feedback);
-		} catch (JSONException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		finally{
-		writer.println(feedback);
-		}
-			
+		writer.println(network.getAllNodes(regNumber));
 	}
 
 	/**

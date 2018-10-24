@@ -1,4 +1,4 @@
-package controller;
+package distributorServlets;
 
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -17,16 +17,16 @@ import model.Distributor;
 import utils.Utils;
 
 /**
- * Servlet implementation class HelloWorld
+ * Servlet implementation class ChangePassword
  */
-@WebServlet("/Login")
-public class Login extends HttpServlet {
+@WebServlet("/ChangePassword")
+public class ChangePassword extends HttpServlet {
 	private static final long serialVersionUID = 1L;
        
     /**
      * @see HttpServlet#HttpServlet()
      */
-    public Login() {
+    public ChangePassword() {
         super();
         // TODO Auto-generated constructor stub
     }
@@ -35,19 +35,22 @@ public class Login extends HttpServlet {
 	 * @see HttpServlet#doGet(HttpServletRequest request, HttpServletResponse response)
 	 */
 	protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-		PrintWriter printWriter = response.getWriter();	
-		Map <String,String> params;
-		Utils utils = new Utils();
-		JSONObject json = new JSONObject();
+		PrintWriter writer = response.getWriter(); 
+		 JSONObject json = new JSONObject();
+		 Map <String,String> params ;
+		 Utils utils =  new Utils();
+		 
+		 params = utils.parseRequest(request);
+		String regNumber = params.get("regNumber");
+		String oldPassWord = params.get("old");
+		String newPassword = params.get("new");
 		
-		params = utils.parseRequest(request);
-		String userName = params.get("name");
-		String passWord = params.get("password");
-		Distributor distributor = new Distributor();
-		
-		if(userName == null || passWord == null)
+		if(regNumber == null || oldPassWord == null || newPassword == null)
 			return;
-		boolean feedback = distributor.login(userName, passWord);
+		Distributor distributor = new Distributor();
+		boolean feedback ;
+		
+		feedback = distributor.changePassword(regNumber, oldPassWord, newPassword);
 		try {
 			json.put("feedback", feedback);
 		} catch (JSONException e) {
@@ -55,9 +58,9 @@ public class Login extends HttpServlet {
 			e.printStackTrace();
 		}
 		finally{
-			printWriter.println(json);
+		writer.println(feedback);
 		}
-
+			
 	}
 
 	/**
