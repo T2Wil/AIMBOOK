@@ -35,32 +35,32 @@ public class InvestorPurchase extends HttpServlet {
 	 * @see HttpServlet#doGet(HttpServletRequest request, HttpServletResponse response)
 	 */
 	protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-		JSONObject json = new JSONObject();
-		PrintWriter writer = response.getWriter();
-		Map <String,String> params ;		
-		Utils utils = new Utils();
-		params = utils.parseRequest(request);
-		
-		String userName = params.get("user_name");
-		String number = params.get("number");
-
-		if(userName == null || number == null)
-			return;
-		Investor investor = new Investor();
-		Investor db_investor = new Investor();
-		
-		investor = db_investor.retrieveInvestorFromDatabase(userName);
-		investor.purchase(Integer.parseInt(number));
-		boolean feedback = investor.recordInvestorTransactionsToDb(investor);
-		try {
-			json.put("feedback", feedback);
-		} catch (JSONException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		finally{
-		writer.println(json);
-		}
+//		JSONObject json = new JSONObject();
+//		PrintWriter writer = response.getWriter();
+//		Map <String,String> params ;		
+//		Utils utils = new Utils();
+//		params = utils.parseRequest(request);
+//		
+//		String userName = params.get("user_name");
+//		String number = params.get("number");
+//
+//		if(userName == null || number == null)
+//			return;
+//		Investor investor = new Investor();
+//		Investor db_investor = new Investor();
+//		
+//		investor = db_investor.retrieveInvestorFromDatabase(userName);
+//		investor.purchase(Integer.parseInt(number));
+//		boolean feedback = investor.recordInvestorTransactionsToDb(investor);
+//		try {
+//			json.put("feedback", feedback);
+//		} catch (JSONException e) {
+//			// TODO Auto-generated catch block
+//			e.printStackTrace();
+//		}
+//		finally{
+//		writer.println(json);
+//		}
 		}
 
 	/**

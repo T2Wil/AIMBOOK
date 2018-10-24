@@ -35,45 +35,46 @@ public class InvestorSignup extends HttpServlet {
 	 * @see HttpServlet#doGet(HttpServletRequest request, HttpServletResponse response)
 	 */
 	protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-		 PrintWriter writer = response.getWriter(); 
-		 JSONObject json = new JSONObject();
-		 Map <String,String> params ;
-		 Utils utils =  new Utils();
-		 
-		 params = utils.parseRequest(request);
-		 String user_name = params.get("UserName");
-		 String first_name = request.getParameter("fname_") ;
-		 String last_name = request.getParameter("lname");
-		 String email = request.getParameter("email");
-		 String phone_number = request.getParameter("tel");
-		 String password = request.getParameter("password");
-		 
-		 
-		 if(user_name == null ||first_name == null ||last_name == null 
-				 ||email == null ||phone_number == null ||password == null )
-		 {
-			 return;
-		 }
-			 
-		 Investor investor = new Investor();
-		 investor.setId();
-		 investor.setUser_name(user_name);
-		 investor.setFirst_name(first_name);
-		 investor.setLast_name(last_name);
-		 investor.setEmail(email);
-		 investor.setPhone_number(phone_number);
-		 investor.setPassword(password);
-		 writer.println(investor);
-		 boolean feedback = investor.signup(investor);
-		 try {
-			json.put("feedback",feedback);
-		} catch (JSONException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		 finally{
-			 writer.println(json);
-		 }
+//		 PrintWriter writer = response.getWriter(); 
+//		 JSONObject json = new JSONObject();
+//		 Map <String,String> params ;
+//		 Utils utils =  new Utils();
+//		 
+//		 params = utils.parseRequest(request);
+//		 String user_name = params.get("UserName");
+//		 String first_name = request.getParameter("fname_") ;
+//		 String last_name = request.getParameter("lname");
+//		 String email = request.getParameter("email");
+//		 String phone_number = request.getParameter("tel");
+//		 String password = request.getParameter("password");
+//		 
+//		 
+//		 if(user_name == null ||first_name == null ||last_name == null 
+//				 ||email == null ||phone_number == null ||password == null )
+//		 {
+//			 return;
+//		 }
+//			 
+//		 Investor investor = new Investor();
+//		 investor.setId();
+//		 investor.setUser_name(user_name);
+//		 investor.setFirst_name(first_name);
+//		 investor.setLast_name(last_name);
+//		 investor.setEmail(email);
+//		 investor.setPhone_number(phone_number);
+//		 investor.setPassword(password);
+//		 writer.println(investor);
+//		 boolean feedback = investor.signup(investor);
+//		 try {
+//			json.put("feedback",feedback);
+//		} catch (JSONException e) {
+//			// TODO Auto-generated catch block
+//			e.printStackTrace();
+//		}
+//		 finally{
+//			 writer.println(json);
+//		 }
+		
 	}
 
 	/**

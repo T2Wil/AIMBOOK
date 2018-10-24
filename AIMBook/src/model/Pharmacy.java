@@ -1,8 +1,9 @@
 package model;
 
 import database.UserDbConnection;
+import utils.MathOperation;
 
-public class Pharmacist extends User{
+public class Pharmacy extends User{
 
 	private String Product_code;//product code
 	
@@ -16,69 +17,89 @@ public class Pharmacist extends User{
 	
 	@Override
 	public String toString() {
-		return "Pharmacist [Product_code=" + Product_code + ", getId()=" + getId() + ", getUser_name()="
-				+ getUser_name() + ", getFirst_name()=" + getFirst_name() + ", getLast_name()=" + getLast_name()
-				+ ", getEmail()=" + getEmail() + ", getPhone_number()=" + getPhone_number() + ", getPassword()="
-				+ getPassword() + ", getDate()=" + getDate() + "]";
+		return "Pharmacy [Product_code=" + Product_code + ", getId()=" + getId() + ", getFirst_name()="
+				+ getFirst_name() + ", getLast_name()=" + getLast_name() + ", getPassword()=" + getPassword() + "]";
 	}
-
-	public boolean signup(Pharmacist pharmacist) {
+	public boolean register(Pharmacy pharmacy){
 		boolean result = false;
-		boolean signupStatus = false;
-		boolean createTable_PharmacistStatus = false;
-		boolean addUserTypeToUsers_dbStatus = false;
-		boolean addToPharmacistsDatabaseStatus = false;
-		boolean createDatabaseStatus = false;
-		UserDbConnection usersDb,investorsDb,investorDb;
-		 usersDb = new UserDbConnection("users_db");
-		 investorsDb = new UserDbConnection("pharmacists_db");
-		 investorDb = new UserDbConnection();
+		int ID ;
+		String password,dbName;
+		password =  pharmacy.getPassword();
+		ID = pharmacy.getId();
+		dbName = pharmacy.getLast_name()+"_db";
+		UserDbConnection DbConn1,DbConn2,DbConn3 = null,DbConn4 = null,DbConn5 = null,DbConn6 = null;
 		
-		signupStatus = usersDb.signup(pharmacist);
-		/*Sufficient condition to test re-registration*/
-		if(!signupStatus)
-			return false;
-		createDatabaseStatus = investorDb.createDatabase(pharmacist);
-
-		if (createDatabaseStatus) {
-			String dbName = pharmacist.getUser_name() + "_db";
-			UserDbConnection investDb = new UserDbConnection(dbName);
-			createTable_PharmacistStatus = investDb.createTable_Investor();
-				addToPharmacistsDatabaseStatus = investorsDb.addToPharmacistsDatabase(pharmacist);
-				if (addToPharmacistsDatabaseStatus)
+		DbConn1= new UserDbConnection();
+		if(DbConn1.registerUser("users_db",ID,password)){
+			DbConn2 = new UserDbConnection();
+			if(DbConn2.AddPharmacy("users_db",pharmacy)){
+				DbConn3= new UserDbConnection();
+				if(DbConn3.createDatabase(dbName)){
 					result = true;
+				}
+			}
 		}
-		
-		if(result == false){
-			if(signupStatus || addUserTypeToUsers_dbStatus)
-				usersDb.removePharmacistFromUsers_db(pharmacist);
-			if(createDatabaseStatus || createTable_PharmacistStatus)
-				usersDb.dropPharmacistDb(pharmacist);
-			if(addToPharmacistsDatabaseStatus)
-				investorsDb.removePharmacistFromPharmacists_db(pharmacist);
+			
+		if(result != true){
+			DbConn4= new UserDbConnection();
+			DbConn4.deleteUser("users_db",ID);
+			DbConn5= new UserDbConnection();
+			DbConn5.deletePharmacy("users_db",ID);
+			DbConn6= new UserDbConnection();
+			DbConn6.dropDb(dbName);
 		}
-		
+				
 		return result;
 	}
 
-	//record the new pharmacist product to database
-	public boolean record(Pharmacist pharmacist){
-		UserDbConnection userDb = new UserDbConnection(pharmacist.getUser_name());
-		return userDb.recordPharmacistTransactionsToDb(pharmacist);
+	public boolean recordPurchases(String userId, String productType,String quantity){
+		MathOperation operation;
+		boolean result = false;
+		int transactionId;
+		String transactionIdToString;
+		UserDbConnection dbCon1,dbCon2,dbCon3 = null;
+		
+		operation = new MathOperation();
+		transactionId = operation.generateSecureNumber();
+		transactionIdToString = Integer.toString(transactionId);
+		dbCon1 = new UserDbConnection();
+		if(dbCon1.updateStock("stock_db",userId, productType, "purchase", transactionIdToString)){
+			dbCon2 = new UserDbConnection();
+			if(dbCon2.recordPurchases("transactions_db",productType,transactionIdToString, quantity) == false){
+				//delete the recorded transaction in the stock_db
+				dbCon3.deleteTransaction("transactions_db",productType, transactionId);
+			}
+			else	
+				result = true;	
+		}
+		return result;
+
 	}
 	
-	public boolean sell(String dbName,String product_code){
-		UserDbConnection userDb = new UserDbConnection(dbName);
-		return userDb.sell(product_code);
+	public boolean recordSales(String userId, String productType,String unitPrice,String quantity,String distributorId){
+		MathOperation operation;
+		boolean result = false;
+		int transactionId;
+		String transactionIdToString;
+		UserDbConnection dbCon1,dbCon2,dbCon3 = null;
+		
+		operation = new MathOperation();
+		transactionId = operation.generateSecureNumber();
+		transactionIdToString = Integer.toString(transactionId);
+		dbCon1 = new UserDbConnection();
+		if(dbCon1.updateStock("stock_db",userId, productType, "sales", transactionIdToString)){
+			dbCon2 = new UserDbConnection();
+			if(dbCon2.recordSales("transactions_db",transactionIdToString,productType, quantity, unitPrice, distributorId) == false){
+				//delete the recorded transaction in the stock_db
+				dbCon3.deleteTransaction("transactions_db",productType, transactionId);
+			}
+			else	
+				result = true;	
 		}
-
-	//load fields data from database (synchronising data on both database and client app)
-		public Pharmacist retrievePharmacistFromDatabase(String userName){
-			String dbName = userName + "_db";
-			UserDbConnection userDb = new UserDbConnection(userName);
-			return userDb.retrievePharmacistFromDatabase(dbName);
-				
-			}	
+		return result;
+	}
+	
+	
 	
 	
 }
