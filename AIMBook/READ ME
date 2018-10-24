@@ -18,3 +18,6 @@ pharmacyServlets
 	PharmacyPurchases.java
 	PharmacyRegistraition.java
 	PharmacySales.java
+userServlets
+	GetStock.java
+	UserLogin.java
