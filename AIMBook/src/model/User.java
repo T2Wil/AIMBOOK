@@ -95,9 +95,9 @@ public abstract  class User {
 		
 	}
 	
-	/*Register new product to database 
-	 * from productsList.txt */
-	public boolean syncProducts(){
+	/*create tables of 
+	 * the productsList.txt */
+	public boolean createTables(){
 		JSONObject products = new JSONObject();
 		FileOperation file = new FileOperation();
 		UserDbConnection dbConnection;
@@ -109,7 +109,7 @@ public abstract  class User {
 			try {
 				product = products.get(Integer.toString(key)).toString();
 				dbConnection = new UserDbConnection();
-				dbConnection.syncProduct(product);
+				dbConnection.createTables(product);
 				}
 
 			 catch (JSONException e) {

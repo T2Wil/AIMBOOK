@@ -627,8 +627,7 @@ public class UserDbConnection {
 		for(String id:transIds){
 			transactionIds.append(id+",");
 		}
-		transactionIds.deleteCharAt(transactionIds.length()-1);
-		
+		transactionIds.deleteCharAt(transactionIds.length()-1);// remove the last comma	
 		try {
 
 			query = "SELECT * FROM transactions_db.sales WHERE transaction_ID  IN (" + transactionIds+")";
@@ -655,9 +654,9 @@ public class UserDbConnection {
 	}
 	
 
-	/*sync products between the productList.txt file with
-	 * the stock_db*/
-	public boolean syncProduct(String product){
+	/*create stock tables if not exist
+	 * in stock_db*/
+	public boolean createTables(String product){
 		boolean result = true;
 		String query;
 		PreparedStatement statement;
