@@ -11,7 +11,3 @@ TECH USED
 .MYSQL
 
 Built with Eclipse
-
-LINK
-----
-http://18.223.111.30/#/Pharmacy
