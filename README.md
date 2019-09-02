@@ -1,8 +1,8 @@
 AIMBOOK
 --------
-It is a pharmacy management system that pharmacists uses to record new products in the stock 
+It is a pharmacy management system that pharmacists use to record new products in the stock 
 
-and keep updates of the stock as purchases or sells are made.
+and track the updates of the stock as purchases or sells made.
 
 TECH USED
 --------
