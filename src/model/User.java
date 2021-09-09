@@ -19,6 +19,8 @@ public abstract  class User {
 	public int getId() {
 		return id;
 	}
+	public int getNoting() {
+	}
 	public void setId(){
 		SecureRandom random = new SecureRandom();
 		this.id = random.nextInt(99999999);
